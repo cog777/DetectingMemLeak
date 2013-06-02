@@ -32,21 +32,22 @@ static node_t *find(void *ptr) {
 
 static void addToList(void * ptr, bool array, unsigned int line, const char * file) {
     pthread_mutex_lock( &mutex );
-    if (!find(ptr)) {
-        node_t *pNode = (node *)calloc(1, sizeof(node));
-        pNode->ptr = ptr;
-        pNode->array = array;
-        pNode->line = line;
-        pNode->file = file;
-        if (head == NULL) {
-            tail = head = pNode;
-        }
-        else {
-             tail->next = pNode;
-             pNode->prev = tail;
-             tail = pNode;
-        }
+
+    node_t *pNode = (node *)calloc(1, sizeof(node));
+    pNode->ptr = ptr;
+    pNode->array = array;
+    pNode->line = line;
+    pNode->file = file;
+    if (head == NULL) {
+        tail = head = pNode;
     }
+    else {
+        tail->next = pNode;
+        pNode->prev = tail;
+        pNode->next = NULL;
+        tail = pNode;
+    }
+
     pthread_mutex_unlock( &mutex );
 }
 
@@ -56,9 +57,13 @@ static void removeFromList(void *ptr, bool array) {
     if ((pNode = find(ptr)) && pNode->array == array) {
         if (pNode == head) {
             head = pNode->next;
+            if (head)
+                head->prev = NULL;
+            else tail = NULL;
         }
         else if (pNode == tail){
             tail = tail->prev;
+            tail->next = NULL;
         }
         else {
             pNode->prev->next = pNode->next;
@@ -92,6 +97,7 @@ void deleteList() {
         pNode = pNode->next;
         free(prevNode);
     }
+    head = tail = NULL;
     pthread_mutex_unlock( &mutex );
 }
 
